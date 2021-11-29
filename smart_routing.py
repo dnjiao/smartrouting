@@ -1,11 +1,12 @@
 import googlemaps
 from datetime import datetime
+from ortools.constraint_solver import routing_enums_pb2
+from ortools.constraint_solver import pywrapcp
 
 class SmartRouting:
     def __init__(self, addresses, api_key):
         self.addresses = addresses
         self.api_key = api_key
-        self.dist_mat = None
 
     def compute_distance(self, idx1, idx2, measure):
         '''
@@ -41,6 +42,45 @@ class SmartRouting:
         num_add = len(self.addresses)
         self.dist_mat = [[self.compute_distance(i, j, measure) for i in range(num_add)]
                         for j in range(num_add)]
+    
+    def print_solution(self, manager, routing, solution):
+        index = routing.Start(0)
+        plan_output = 'Best Route: \n'
+        route_distance = 0
+        while not routing.IsEnd(index):
+            plan_output += f'{self.addresses[manager.IndexToNode(index)]} [{manager.IndexToNode(index)}]-> \n'
+            previous_index = index
+            index = solution.Value(routing.NextVar(index))
+            route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
+        plan_output += f'{self.addresses[manager.IndexToNode(index)]} [{manager.IndexToNode(index)}]\n'
+        print(plan_output)
+    
+    def find_optimal_route(self):
+        manager = pywrapcp.RoutingIndexManager(len(self.addresses), 1, 0)
+        routing = pywrapcp.RoutingModel(manager)
+
+        def distance_callback(from_idx, to_idx):
+            from_node = self.manager.IndexToNode(from_idx)
+            to_node = self.manager.IndexToNode(to_idx)
+            return self.dist_mat[from_node][to_node]
+        
+        transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+
+        routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+
+        search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+        search_parameters.first_solution_strategy = (routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+
+        solution = routing.SolveWithParameters(search_parameters)
+
+        if solution:
+            self.print_solution(manager, routing, solution)
+
+        
+ 
+
+
+
 
 
 
