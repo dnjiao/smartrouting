@@ -3,7 +3,7 @@ from datetime import datetime
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 
-class SmartRouting:
+class ORRouting:
     def __init__(self, addresses, api_key):
         self.addresses = addresses
         self.api_key = api_key

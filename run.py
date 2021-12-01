@@ -1,4 +1,4 @@
-from smart_routing import SmartRouting
+from or_routing import ORRouting
 from ga_routing import GeneticAlgorithm
 from datetime import datetime
 import sys
@@ -32,7 +32,7 @@ while True:
         break
 measure = 'distance' if measure_choice == '1' else 'duration'
 if algo == '1':      
-    sr = SmartRouting(addresses, api_key)
+    sr = ORRouting(addresses, api_key)
     sr.build_distance_matrix(measure)
     sr.find_optimal_route()
 else:

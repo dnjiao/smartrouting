@@ -1,7 +1,7 @@
 import requests
 from geopy.geocoders import Nominatim
 
-class OSMSmartRouting:
+class OSMRouting:
   def __init__(self, addresses):
     self.addresses = addresses
     self.dist_mat = None
