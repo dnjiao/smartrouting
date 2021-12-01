@@ -52,8 +52,10 @@ class SmartRouting:
             previous_index = index
             index = solution.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
+            print(previous_index, index, route_distance)
         plan_output += f'{self.addresses[manager.IndexToNode(index)]} [{manager.IndexToNode(index)}]\n'
         print(plan_output)
+        print(f'Distance {route_distance}')
     
     def find_optimal_route(self):
         manager = pywrapcp.RoutingIndexManager(len(self.addresses), 1, 0)

@@ -1,14 +1,43 @@
 from smart_routing import SmartRouting
+from ga_routing import GeneticAlgorithm
+from datetime import datetime
+import sys
 
 api_key = input('Enter a valid Google Maps API key: ')
-print('\nNow enter a list of addresses (Enter only to exit)')
-addresses = []
-while True:
-    addr = input('Enter an address: ')
-    if not addr:
-        break
-    addresses.append(addr)
+addr_fl = input('\nNow enter the name of file that contains a list of addresses:')
+with open(addr_fl) as f:
+    addresses = [line.rstrip() for line in f.readlines()]
 print(addresses)
-
-sr = SmartRouting(addresses, api_key)
-sr.find_optimal_route()
+attempts = 0
+while True:
+    if attempts == 3:
+        sys.exit('Invalid choice. Exiting...')
+    algo = input('\nSelect Algorithm\nLocal Search[1] or Genetic Algorithm[2]: ')
+    if algo not in ['1', '2']:
+        print('Please type 1 or 2.')
+        attempts += 1
+        continue
+    else:
+        break
+attempts = 0
+while True:
+    if attempts == 3:
+        sys.exit('Invalid choice. Exiting...')
+    measure_choice = input('\nSelect Measure\nDriving distance[1] or Driving duration[2]: ')
+    if measure_choice not in ['1', '2']:
+        print('Please type 1 or 2.')
+        attempts += 1
+        continue
+    else:
+        break
+measure = 'distance' if measure_choice == '1' else 'duration'
+if algo == '1':      
+    sr = SmartRouting(addresses, api_key)
+    sr.build_distance_matrix(measure)
+    sr.find_optimal_route()
+else:
+    ga = GeneticAlgorithm(addresses, pop_size=50, num_generations=100)
+    print(f'GA starts at {datetime.now()}')
+    distances = ga.find_best_route(api_key, measure)
+    print(f'GA ends at {datetime.now()}')
+    print(distances)
