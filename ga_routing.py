@@ -5,39 +5,12 @@ import pandas as pd
 import numpy as np
 from math import factorial
 
-class Location:
-    def __init__(self, address):
-        self.address = address
-    
-    def compute_distance(self, location, api_key, measure):
-        gmaps = Client(api_key)
-        gmap_dist = gmaps.distance_matrix(self.address, location.address, departure_time=datetime.now())
-        distance = gmap_dist['rows'][0]['elements'][0]['distance']['value']
-        duration = gmap_dist['rows'][0]['elements'][0]['duration_in_traffic']['value']
-        if measure == 'distance':
-            return distance
-        return duration
-
-class Fitness:
-    def __init__(self, route):
-        self.route = route
-    
-    def compute_route_fitness(self, key, measure):
-        distance = 0
-        for i in range(0, len(self.route)):
-            from_loc = Location(self.route[i])
-            to_loc = None
-            if i + 1 < len(self.route):
-                to_loc = Location(self.route[i + 1])
-            else:
-                to_loc = Location(self.route[0])
-            distance += from_loc.compute_distance(to_loc, key, measure)
-        fitness = 1 / distance
-        return distance, fitness
-
 class GeneticAlgorithm:
-    def __init__(self, locations, pop_size=None, elite_size=None, num_generations=100):
+    def __init__(self, locations, api_key, measure, pop_size=None, elite_size=None, num_generations=100):
         self.locations = locations
+        self.api_key = api_key
+        self.measure = measure
+        self.dist_mat = None
         self.pop_size = pop_size
         self.elite_size = elite_size
         self.num_generations = num_generations
@@ -54,14 +27,35 @@ class GeneticAlgorithm:
         for i in range(self.pop_size):
             random.shuffle(loc_ids)
             self.population.append([0, *loc_ids, 0])
+
+    def compute_distance_matrix(self, api_key, measure):
+        gmaps = Client(api_key)
+        gmap_dist = gmaps.distance_matrix(self.locations, self.locations, departure_time=datetime.now())
+        if measure == 'duration':
+            measure = 'duration_in_traffic'
+        num_addr = len(self.locations)
+        self.dist_mat = [[gmap_dist['rows'][i]['elements'][j][measure]['value'] for i in range(num_addr)]
+                        for j in range(num_addr)]
     
-    def select_parents(self, api_key, measure):
+    def _compute_route_fitness(self, route, dist_mat):
+        distance = 0
+        for i in range(0, len(route)):
+            from_id  = route[i]
+            to_id = None
+            if i + 1 < len(route):
+                to_id = route[i + 1]
+            else:
+                to_id = route[0]
+            distance += dist_mat[from_id][to_id]
+        fitness = 1 / distance
+        return distance, fitness
+    
+    def select_parents(self):
         distances = []
         scores = []
         for i in range(self.pop_size):
-            route = [self.locations[j] for j in self.population[i]]
-            fit = Fitness(route)
-            distance, fitness = fit.compute_route_fitness(api_key, measure)
+            route = self.population[i]
+            distance, fitness = self._compute_route_fitness(route, self.dist_mat)
             distances.append(distance)
             scores.append(fitness)
         print('Distance and fitness for each route is calculated')
@@ -131,17 +125,18 @@ class GeneticAlgorithm:
     def find_best_route(self, api_key, measure):
         self.initialize_population()
         print(f'Population intialized with {self.pop_size} routes')
+        self.compute_distance_matrix(api_key, measure)
+        print('Distance matrix calculated')
         best_dist = []
         best_fitness = []
         best_route = []
         for i in range(self.num_generations):
             print(f'\nGeneration #{i}')
-            self.select_parents(api_key, measure)
+            self.select_parents()
             best_dist.append(self.ranking.at[0, 'distance'])
             best_fitness.append(self.ranking.at[0, 'fitness'])
             best_route_id = self.ranking.at[0, 'route_id']
             best_route.append(self.population[best_route_id])
-            
             print('Mating pool selected')
             self.breed_population()
             print('Breeding complete')

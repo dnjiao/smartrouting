@@ -36,7 +36,7 @@ if algo == '1':
     sr.build_distance_matrix(measure)
     sr.find_optimal_route()
 else:
-    ga = GeneticAlgorithm(addresses, pop_size=50, num_generations=100)
+    ga = GeneticAlgorithm(addresses, api_key, measure, pop_size=20, num_generations=5)
     print(f'GA starts at {datetime.now()}')
     distances = ga.find_best_route(api_key, measure)
     print(f'GA ends at {datetime.now()}')
